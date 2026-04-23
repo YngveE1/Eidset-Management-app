@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Eidset">
+<meta name="theme-color" content="#6B3A9E">
+<link id="manifest-link" rel="manifest">
+<title>Eidset Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --pu:#6B3A9E;--pu2:#4A2575;--pu3:#9B6BC8;--pup:#F2E8FA;--pup2:#E8D4F5;
+  --pk:#C94B7A;--pkl:#E87AA4;--pkp:#FCE8F1;
+  --gr:#3A9E6A;--grl:#5DC28A;--grp:#E5F7EE;
+  --bg:#FBF0F7;--card:#FFFFFF;
+  --tx:#2A1535;--txm:#6B4880;--txl:#A88EC0;
+  --bd:#E0C8F0;--rd:#C0392B;--or:#E67E22;
+  --sh:0 4px 24px rgba(107,58,158,0.13);
+  --r:18px;--rs:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,'Segoe UI',Georgia,serif;font-size:18px;background:var(--bg);color:var(--tx);max-width:500px;margin:0 auto;min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* HEADER */
+.app-header{background:linear-gradient(135deg,var(--pu2) 0%,var(--pu) 55%,var(--pk) 100%);padding:18px 20px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 14px rgba(74,37,112,0.35)}
+.logo-area{display:flex;align-items:center;gap:12px}
+.logo-img{height:44px;width:auto;border-radius:8px;object-fit:contain}
+.logo-text{font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fff;letter-spacing:0.5px;text-shadow:1px 1px 4px rgba(0,0,0,0.3);line-height:1.15}
+.logo-text span{display:block;font-size:11px;letter-spacing:3px;font-weight:normal;opacity:0.82}
+.icon-btn{background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:46px;height:46px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .2s}
+.icon-btn:active{background:rgba(255,255,255,0.38)}
+
+/* SECONDARY HEADER */
+.secondary-header{background:linear-gradient(135deg,var(--pu2) 0%,var(--pu) 55%,var(--pk) 100%);padding:16px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.secondary-header h2{color:#fff;font-size:20px;font-family:Georgia,serif;flex:1}
+.back-btn{background:rgba(255,255,255,0.2);border:none;border-radius:8px;padding:8px 14px;color:#fff;font-size:17px;cursor:pointer;white-space:nowrap}
+
+/* CONTENT */
+.screen-content{flex:1;overflow-y:auto;padding:20px 16px 100px}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh);border:1.5px solid var(--bd)}
+
+/* ASSIGNMENT CARDS */
+.assignment-card{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh);border:2.5px solid var(--gr);cursor:pointer;position:relative;transition:transform .15s}
+.assignment-card:active{transform:scale(0.98)}
+.assignment-card.paused{border-color:var(--or)}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 rgba(58,158,106,0.55),var(--sh)}55%{box-shadow:0 0 0 12px rgba(58,158,106,0),var(--sh)}}
+.assignment-card.act{animation:pulse-border 2.5s ease-in-out infinite}
+.card-type-badge{display:inline-block;background:var(--pup);color:var(--pu);font-size:13px;font-weight:700;padding:4px 13px;border-radius:20px;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+.card-name{font-size:23px;font-weight:bold;font-family:Georgia,serif;color:var(--tx);margin-bottom:8px}
+.card-meta{font-size:15px;color:var(--txm);margin-bottom:3px}
+.card-total{font-size:21px;font-weight:bold;color:var(--pu);margin-top:12px}
+.card-dot{position:absolute;top:20px;right:20px;width:15px;height:15px;border-radius:50%;background:var(--grl)}
+.card-dot.paused{background:var(--or)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;color:var(--txl)}
+.empty-state .emo{font-size:64px;margin-bottom:16px}
+.empty-state p{font-size:20px}
+
+/* BUTTONS */
+.btn-primary{display:block;width:100%;background:linear-gradient(135deg,var(--pu) 0%,var(--pk) 100%);color:#fff;border:none;border-radius:var(--r);padding:18px 24px;font-size:20px;font-weight:bold;cursor:pointer;text-align:center;box-shadow:0 4px 18px rgba(107,58,158,0.32);transition:opacity .2s,transform .15s;margin-top:8px}
+.btn-primary:active{opacity:0.85;transform:scale(0.98)}
+.btn-secondary{display:block;width:100%;background:var(--pup);color:var(--pu);border:2px solid var(--pu);border-radius:var(--r);padding:15px 24px;font-size:18px;font-weight:600;cursor:pointer;text-align:center;margin-top:8px;transition:background .2s}
+.btn-secondary:active{background:var(--pu);color:#fff}
+.btn-danger{display:block;width:100%;background:var(--rd);color:#fff;border:none;border-radius:var(--r);padding:18px 24px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 4px 18px rgba(192,57,43,0.38);margin-top:8px}
+.btn-danger:active{opacity:0.88}
+.btn-pause{background:var(--or);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:17px;font-weight:600;cursor:pointer}
+.btn-resume{background:var(--gr);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:17px;font-weight:600;cursor:pointer}
+.btn-del{background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px;color:var(--rd)}
+.btn-small{background:var(--pup);color:var(--pu);border:1.5px solid var(--pu);border-radius:var(--rs);padding:8px 16px;font-size:15px;font-weight:600;cursor:pointer}
+
+/* FORMS */
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:16px;font-weight:600;color:var(--pu2);margin-bottom:6px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:14px 16px;font-size:18px;border:2px solid var(--bd);border-radius:var(--rs);background:#fff;color:var(--tx);outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--pu);box-shadow:0 0 0 3px rgba(107,58,158,0.1)}
+.form-group small{display:block;font-size:14px;color:var(--txl);margin-top:4px}
+.form-group textarea{min-height:130px;resize:vertical}
+
+/* TABS */
+.tab-nav{display:flex;background:#fff;border-bottom:2px solid var(--bd);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:50}
+.tab-nav::-webkit-scrollbar{display:none}
+.tab-btn{background:none;border:none;padding:14px 15px;font-size:15px;font-weight:600;color:var(--txl);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .2s,border-color .2s}
+.tab-btn.active{color:var(--pu);border-bottom-color:var(--pu)}
+.tab-content{display:none;padding:18px 16px 100px}
+.tab-content.active{display:block}
+
+/* ASSIGNMENT DETAIL HEADER */
+.detail-header{background:linear-gradient(135deg,var(--pu2) 0%,var(--pu) 55%,var(--pk) 100%);padding:14px 18px;position:sticky;top:0;z-index:100}
+.detail-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.detail-name{font-size:20px;font-weight:bold;color:#fff;font-family:Georgia,serif;flex:1;margin:0 10px;line-height:1.2}
+.type-display{background:rgba(255,255,255,0.2);color:#fff;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;display:inline-block;margin-bottom:8px}
+.status-bar{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.status-label{color:rgba(255,255,255,0.95);font-size:16px;font-weight:600}
+.bobil-btn{background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:6px 10px;font-size:20px;cursor:pointer;transition:background .2s}
+.bobil-btn:active{background:rgba(255,255,255,0.3)}
+
+/* RUNNING TOTAL */
+.running-total{background:linear-gradient(135deg,var(--pu) 0%,var(--pk) 100%);color:#fff;padding:13px 20px;display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:600}
+.running-total-amt{font-size:24px;font-weight:bold}
+
+/* LIST ITEMS */
+.list-item{background:#fff;border-radius:var(--rs);padding:14px 16px;margin-bottom:10px;border:1.5px solid var(--bd);display:flex;justify-content:space-between;align-items:flex-start}
+.li-info{flex:1}
+.li-title{font-size:17px;font-weight:600;margin-bottom:4px}
+.li-sub{font-size:15px;color:var(--txm)}
+.li-amt{font-size:18px;font-weight:bold;color:var(--pu);margin-left:10px;white-space:nowrap}
+
+/* TOTAL TABLE */
+.ttable{width:100%;border-collapse:collapse}
+.ttable tr td{padding:12px 0;border-bottom:1px solid var(--bd);font-size:18px}
+.ttable tr td:last-child{text-align:right;font-weight:600;color:var(--pu)}
+.ttable .tr-total td{font-size:22px;font-weight:bold;color:var(--tx);border-bottom:none;border-top:3px solid var(--pu);padding-top:16px}
+.ttable .tr-head td{font-weight:bold;color:var(--pk);font-size:15px;padding-top:20px;padding-bottom:4px;border-bottom:none}
+
+/* RECEIPT IMAGE */
+.receipt-img{width:100%;max-height:200px;object-fit:cover;border-radius:var(--rs);margin-top:8px;cursor:pointer}
+
+/* BOBIL SECTION */
+.bobil-sec{background:var(--pkp);border:2px dashed var(--pk);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.bobil-sec h3{color:var(--pk);font-size:20px;margin-bottom:14px;font-family:Georgia,serif}
+.bobil-badge{background:var(--pk);color:#fff;font-size:13px;font-weight:700;padding:3px 12px;border-radius:12px;display:inline-block;margin-bottom:10px}
+
+/* MODALS */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(42,21,53,0.78);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-ov.show{display:flex}
+.modal-box{background:#fff;border-radius:var(--r);padding:32px 26px;width:100%;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.42)}
+.modal-box h2{font-size:28px;font-family:Georgia,serif;color:var(--rd);margin-bottom:16px}
+.modal-box p{font-size:18px;color:var(--txm);margin-bottom:28px;line-height:1.5}
+.modal-cancel{display:block;width:100%;background:var(--pup);color:var(--pu);border:2px solid var(--pu);border-radius:var(--r);padding:16px;font-size:19px;font-weight:600;cursor:pointer;margin-top:12px}
+
+/* IMAGE PREVIEW */
+.img-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;align-items:center;justify-content:center;padding:20px}
+.img-ov.show{display:flex}
+.img-ov img{max-width:100%;max-height:88vh;border-radius:8px}
+
+/* SECTION TITLE */
+.sec-title{font-size:19px;font-weight:bold;color:var(--pu2);font-family:Georgia,serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--pup)}
+
+/* BOTTOM BAR */
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:#fff;border-top:2px solid var(--bd);padding:12px 16px;display:flex;gap:10px;z-index:200}
+
+/* FAB */
+.fab{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--pu) 0%,var(--pk) 100%);color:#fff;border:none;border-radius:50px;padding:18px 36px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 6px 28px rgba(107,58,158,0.48);white-space:nowrap;z-index:200;transition:transform .2s}
+.fab:active{transform:translateX(-50%) scale(0.95)}
+
+/* PHOTO INPUT */
+.photo-wrap label{display:block;background:var(--pup);border:2px dashed var(--pu);border-radius:var(--rs);padding:14px;text-align:center;cursor:pointer;color:var(--pu);font-size:16px;font-weight:600}
+.photo-wrap input[type=file]{display:none}
+
+/* INFO ROWS */
+.info-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd);font-size:17px}
+.info-row:last-child{border-bottom:none}
+.info-row span:first-child{color:var(--txm)}
+.info-row span:last-child{font-weight:600;text-align:right;max-width:55%}
+
+/* SETTINGS SECTION */
+.sett-sec{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:16px;box-shadow:var(--sh);border:1.5px solid var(--bd)}
+.sett-sec h3{font-size:18px;font-weight:bold;color:var(--pu2);margin-bottom:16px;font-family:Georgia,serif}
+
+/* TOAST */
+#toast{display:none;position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:var(--pu2);color:#fff;padding:12px 26px;border-radius:50px;font-size:16px;z-index:3000;max-width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+
+.hidden{display:none!important}
+#screen-assignment{overflow:hidden}
+#asgn-scroll{flex:1;overflow-y:auto}
+</style>
+</head>
+<body>
+
+<!-- ========== SCREEN: HOME ========== -->
+<div id="screen-home" class="screen active">
+  <div class="app-header">
+    <div class="logo-area">
+      <img id="home-logo" src="" alt="" class="logo-img hidden">
+      <div class="logo-text">EIDSET<span>MANAGEMENT</span></div>
+    </div>
+    <button class="icon-btn" onclick="showScreen('settings')" aria-label="Innstillinger">⚙️</button>
+  </div>
+  <div class="screen-content">
+    <div id="assignments-list"></div>
+    <div id="empty-state" class="empty-state">
+      <div class="emo">📋</div>
+      <p>Ingen aktive oppdrag</p>
+      <p style="font-size:16px;margin-top:8px;color:var(--txl)">Trykk + for å starte nytt</p>
+    </div>
+  </div>
+  <button class="fab" onclick="showScreen('new-assignment')">+ Nytt oppdrag</button>
+</div>
+
+<!-- ========== SCREEN: NEW ASSIGNMENT ========== -->
+<div id="screen-new-assignment" class="screen">
+  <div class="secondary-header">
+    <button class="back-btn" onclick="showScreen('home')">← Tilbake</button>
+    <h2>Nytt oppdrag</h2>
+  </div>
+  <div class="screen-content">
+    <div class="card">
+      <div class="form-group">
+        <label>Oppdragsnavn *</label>
+        <input type="text" id="new-navn" placeholder="Navn på oppdraget">
+      </div>
+      <div class="form-group">
+        <label>Oppdragstype *</label>
+        <select id="new-type">
+          <option value="">Velg type...</option>
+          <option value="Vanlig familieråd">Vanlig familieråd</option>
+          <option value="Akutt familieråd">Akutt familieråd</option>
+          <option value="Institusjon familieråd">Institusjon familieråd</option>
+          <option value="Instruksjoner/foredrag">Instruksjoner/foredrag</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kommunens merking / saksnr</label>
+        <input type="text" id="new-kommune" placeholder="Kommunens referanse">
+      </div>
+      <div class="form-group">
+        <label>Oppdragsgivers merking / nr</label>
+        <input type="text" id="new-oppdrag-merking" placeholder="Oppdragsgivers referanse">
+      </div>
+      <div class="form-group">
+        <label>Referanseperson (oppdragsgiver)</label>
+        <input type="text" id="new-referanse" placeholder="Navn / kontaktperson">
+      </div>
+      <div class="form-group">
+        <label>Startdato</label>
+        <input type="date" id="new-startdato">
+      </div>
+      <div class="form-group">
+        <label>Sluttdato</label>
+        <input type="date" id="new-sluttdato">
+      </div>
+      <div class="form-group">
+        <label>Timepris (kr) – blank = hent fra innstillinger</label>
+        <input type="number" id="new-timepris" placeholder="Tomt = standard" min="0" step="1">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="createAssignment()">Opprett oppdrag →</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: ASSIGNMENT DETAIL ========== -->
+<div id="screen-assignment" class="screen">
+  <div class="detail-header">
+    <div class="detail-header-top">
+      <button class="back-btn" onclick="showScreen('home')">← Hjem</button>
+      <div class="detail-name" id="detail-name">–</div>
+      <button class="bobil-btn" id="bobil-toggle-btn" onclick="toggleBobil()" title="Bobil">🚐</button>
+    </div>
+    <div><span class="type-display" id="detail-type">–</span></div>
+    <div class="status-bar">
+      <span class="status-label" id="detail-status">● Aktiv</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn-pause" id="btn-pause" onclick="pauseAssignment()">⏸ Pause</button>
+        <button class="btn-resume hidden" id="btn-resume" onclick="resumeAssignment()">▶ Fortsett</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="running-total">
+    <span>Løpende total:</span>
+    <span class="running-total-amt" id="running-total">0 kr</span>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('dager',this)">📅 Dager</button>
+    <button class="tab-btn" onclick="showTab('utgifter',this)">🧾 Utgifter</button>
+    <button class="tab-btn" onclick="showTab('transport',this)">🚗 Bom/Ferge</button>
+    <button class="tab-btn" onclick="showTab('notater',this)">📝 Notater</button>
+    <button class="tab-btn" onclick="showTab('total',this)">💰 Total</button>
+  </div>
+
+  <div id="asgn-scroll">
+
+    <!-- TAB: DAGER -->
+    <div id="tab-dager" class="tab-content active">
+      <div id="bobil-sec" class="bobil-sec hidden">
+        <span class="bobil-badge">🚐 BOBIL AKTIV</span>
+        <h3>Bobil-utleie</h3>
+        <div class="form-group">
+          <label>Døgnpris (kr/dag)</label>
+          <input type="number" id="bobil-dognpris" placeholder="0" min="0" step="1" oninput="saveBobil()">
+        </div>
+        <div class="form-group">
+          <label>Kost totalt (kr)</label>
+          <input type="number" id="bobil-kost" placeholder="0" min="0" step="1" oninput="saveBobil()">
+        </div>
+        <p style="font-size:15px;color:var(--pk)">Km registreres i dagslisten – følger vanlig km-sats</p>
+      </div>
+
+      <div class="card">
+        <div class="sec-title">Legg til dag</div>
+        <div class="form-group">
+          <label>Dato</label>
+          <input type="date" id="dag-dato">
+        </div>
+        <div class="form-group">
+          <label>Timer denne dagen</label>
+          <input type="number" id="dag-timer" min="0" step="0.5" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Km én vei</label>
+          <input type="number" id="dag-km" min="0" step="1" placeholder="0" oninput="kmPreview()">
+          <small id="km-prev" class="hidden" style="color:var(--pu);font-weight:700"></small>
+        </div>
+        <div class="form-group">
+          <label>Ekstra km (ærend, henting o.l.)</label>
+          <input type="number" id="dag-ekstra" min="0" step="1" placeholder="0" oninput="ekstraChange()">
+        </div>
+        <div class="form-group hidden" id="ekstra-desc-grp">
+          <label>Beskriv ekstra km</label>
+          <input type="text" id="dag-ekstra-desc" placeholder="f.eks. handling, henting, ærend">
+        </div>
+        <button class="btn-secondary" onclick="addDag()">+ Legg til dag</button>
+      </div>
+      <div id="dag-list"></div>
+    </div>
+
+    <!-- TAB: UTGIFTER -->
+    <div id="tab-utgifter" class="tab-content">
+      <div class="card">
+        <div class="sec-title">Legg til utgift</div>
+        <div class="form-group">
+          <label>Beskrivelse *</label>
+          <input type="text" id="utg-desc" placeholder="Hva gjelder utgiften?">
+        </div>
+        <div class="form-group">
+          <label>Beløp (kr) *</label>
+          <input type="number" id="utg-belop" min="0" step="1" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Kvittering / bilde</label>
+          <div class="photo-wrap">
+            <label for="utg-bilde">📷 Velg eller ta bilde</label>
+            <input type="file" id="utg-bilde" accept="image/*" capture="environment" onchange="prevExpense(this)">
+          </div>
+          <img id="exp-prev" class="hidden" style="width:100%;max-height:160px;object-fit:cover;border-radius:var(--rs);margin-top:10px" alt="Forhåndsvisning">
+        </div>
+        <button class="btn-secondary" onclick="addUtgift()">+ Legg til utgift</button>
+      </div>
+      <div id="utgifter-list"></div>
+    </div>
+
+    <!-- TAB: TRANSPORT -->
+    <div id="tab-transport" class="tab-content">
+      <div class="card">
+        <div class="sec-title">Bom og ferge</div>
+        <div class="form-group">
+          <label>Bomutgifter totalt (kr)</label>
+          <input type="number" id="bom-felt" min="0" step="1" placeholder="0" oninput="saveTransport()">
+        </div>
+        <div class="form-group">
+          <label>Fergeutgifter totalt (kr)</label>
+          <input type="number" id="ferge-felt" min="0" step="1" placeholder="0" oninput="saveTransport()">
+        </div>
+        <div style="background:var(--pup);border-radius:var(--rs);padding:14px;margin-top:6px">
+          <p style="font-size:16px;color:var(--txm)">💡 Standardsatser fra innstillinger fylles inn automatisk. Juster her per oppdrag.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: NOTATER -->
+    <div id="tab-notater" class="tab-content">
+      <div class="card">
+        <div class="sec-title">Notater</div>
+        <div class="form-group">
+          <textarea id="notater-felt" placeholder="Skriv notater her...(vises i PDF-rapporten)" oninput="saveNotater()"></textarea>
+        </div>
+        <p style="font-size:15px;color:var(--txl)">📄 Notatene vises i PDF-rapporten</p>
+      </div>
+    </div>
+
+    <!-- TAB: TOTAL -->
+    <div id="tab-total" class="tab-content">
+      <div class="card">
+        <div class="sec-title">Kostnadssammendrag</div>
+        <div id="total-breakdown"></div>
+      </div>
+      <div class="card" style="background:var(--pup)">
+        <div class="sec-title">Oppdragsinfo</div>
+        <div id="oppdrag-info"></div>
+      </div>
+    </div>
+
+    <div style="height:80px"></div>
+  </div><!-- /asgn-scroll -->
+
+  <div class="bottom-bar">
+    <button class="btn-secondary" style="flex:1;margin:0" onclick="showScreen('home')">← Hjem</button>
+    <button class="btn-danger" style="flex:1;margin:0" onclick="initiateClose()">Avslutt oppdrag</button>
+  </div>
+</div>
+
+<!-- ========== SCREEN: SETTINGS ========== -->
+<div id="screen-settings" class="screen">
+  <div class="secondary-header">
+    <button class="back-btn" onclick="showScreen('home')">← Tilbake</button>
+    <h2>Innstillinger</h2>
+  </div>
+  <div class="screen-content">
+    <div class="sett-sec">
+      <h3>💰 Satser</h3>
+      <div class="form-group">
+        <label>Timepris (kr/time)</label>
+        <input type="number" id="s-timepris" min="0" step="1" placeholder="f.eks. 850">
+      </div>
+      <div class="form-group">
+        <label>Km-sats (kr/km)</label>
+        <input type="number" id="s-kmsats" min="0" step="0.01" placeholder="5.30">
+        <small>Statens sats 2026: 5,30 kr/km</small>
+      </div>
+      <div class="form-group">
+        <label>Standard bompris (kr, per oppdrag)</label>
+        <input type="number" id="s-bom" min="0" step="1" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Standard fergepris (kr, per oppdrag)</label>
+        <input type="number" id="s-ferge" min="0" step="1" placeholder="0">
+      </div>
+    </div>
+
+    <div class="sett-sec">
+      <h3>🏢 Firmadetaljer (vises i PDF)</h3>
+      <div class="form-group">
+        <label>Firmanavn</label>
+        <input type="text" id="s-firmanavn" placeholder="Eidset Management">
+      </div>
+      <div class="form-group">
+        <label>Adresse</label>
+        <input type="text" id="s-adresse" placeholder="Gateadresse, postnr sted">
+      </div>
+      <div class="form-group">
+        <label>Org.nr</label>
+        <input type="text" id="s-orgnr" placeholder="123 456 789 MVA">
+      </div>
+      <div class="form-group">
+        <label>Kontonummer</label>
+        <input type="text" id="s-kontonr" placeholder="1234.56.78901">
+      </div>
+    </div>
+
+    <div class="sett-sec">
+      <h3>🖼️ Logo</h3>
+      <p style="font-size:16px;color:var(--txm);margin-bottom:14px">Vises i app-topp og i PDF-rapporter</p>
+      <div class="photo-wrap" style="margin-bottom:12px">
+        <label for="logo-input">📷 Last opp logo-fil</label>
+        <input type="file" id="logo-input" accept="image/*" onchange="uploadLogo(this)">
+      </div>
+      <img id="logo-prev" class="hidden" style="max-height:80px;border-radius:8px;display:block;margin-bottom:10px" alt="Logo">
+      <button class="btn-small" onclick="removeLogo()">Fjern logo</button>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()">💾 Lagre innstillinger</button>
+
+    <div style="text-align:center;margin-top:28px;color:var(--txl);font-size:15px;line-height:1.7">
+      <p>Eidset Management v1.0</p>
+      <p>Alt lagres lokalt på enheten</p>
+      <p>Ingen data sendes til internett</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: BEKREFTELSE ========== -->
+<div class="modal-ov" id="modal-confirm">
+  <div class="modal-box">
+    <h2>⚠️ Avslutt oppdrag?</h2>
+    <p>En PDF-rapport genereres og lastes ned.<br>
+       Oppdraget slettes permanent fra appen.<br><br>
+       <strong>Dette kan ikke angres.</strong></p>
+    <button class="btn-danger" onclick="finalizeClose()">✅ JA – AVSLUTT OG LAST NED PDF</button>
+    <button class="modal-cancel" onclick="closeModal('modal-confirm')">Avbryt – fortsett oppdrag</button>
+  </div>
+</div>
+
+<!-- ========== IMAGE PREVIEW ========== -->
+<div class="img-ov" id="img-ov" onclick="closeModal('img-ov')">
+  <img id="img-full" src="" alt="Kvittering">
+</div>
+
+<!-- ========== TOAST ========== -->
+<div id="toast"></div>
+
+<script>
+// ===== STATE =====
+let currentId = null;
+let expImgData = null;
+
+// ===== STORAGE =====
+const S_KEY = 'em_settings';
+const A_KEY = 'em_assignments';
+
+function getSettings() {
+  const def = { timepris: 850, kmSats: 5.30, bom: 0, ferge: 0, firmanavn: 'Eidset Management', adresse: '', orgNr: '', kontoNr: '', logo: '' };
+  try { return Object.assign({}, def, JSON.parse(localStorage.getItem(S_KEY) || '{}')); }
+  catch { return def; }
+}
+function putSettings(s) { localStorage.setItem(S_KEY, JSON.stringify(s)); }
+function getAll() { try { return JSON.parse(localStorage.getItem(A_KEY) || '[]'); } catch { return []; } }
+function putAll(arr) { localStorage.setItem(A_KEY, JSON.stringify(arr)); }
+function getA(id) { return getAll().find(a => a.id === id); }
+function putA(upd) {
+  const arr = getAll();
+  const i = arr.findIndex(a => a.id === upd.id);
+  if (i >= 0) arr[i] = upd; else arr.push(upd);
+  putAll(arr);
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 8); }
+
+// ===== FORMATTING =====
+function kr(n) {
+  return (Math.round((n || 0) * 100) / 100)
+    .toLocaleString('nb-NO', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' kr';
+}
+function fdate(d) {
+  if (!d) return '–';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('nb-NO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function fdateShort(d) {
+  if (!d) return '–';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('nb-NO', { day: '2-digit', month: '2-digit' });
+}
+
+// ===== SCREENS =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+  if (name === 'home') renderHome();
+  if (name === 'settings') loadSettings();
+  if (name === 'new-assignment') resetNew();
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'total') renderTotal();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ===== HOME =====
+function renderHome() {
+  const arr = getAll();
+  const list = document.getElementById('assignments-list');
+  const empty = document.getElementById('empty-state');
+  const s = getSettings();
+
+  // Logo
+  const logoEl = document.getElementById('home-logo');
+  if (s.logo) { logoEl.src = s.logo; logoEl.classList.remove('hidden'); }
+  else { logoEl.classList.add('hidden'); }
+
+  if (arr.length === 0) { list.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  list.innerHTML = arr.map(a => {
+    const tot = calcTotal(a);
+    const act = a.status === 'active';
+    return `<div class="assignment-card ${act ? 'act' : 'paused'}" onclick="openA('${a.id}')">
+      <div class="card-dot ${act ? '' : 'paused'}"></div>
+      <div class="card-type-badge">${a.type}</div>
+      <div class="card-name">${a.navn}</div>
+      <div class="card-meta">📅 ${fdate(a.startDato)} – ${fdate(a.sluttDato)}</div>
+      <div class="card-meta">🏛 ${a.kommuneMerking || '–'}&nbsp;&nbsp;|&nbsp;&nbsp;📌 ${a.oppdragsMerking || '–'}</div>
+      <div class="card-total">${kr(tot)}</div>
+      <div style="font-size:14px;color:${act ? 'var(--gr)' : 'var(--or)'};font-weight:700;margin-top:4px">${act ? '● Aktiv' : '⏸ Pauset'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== NEW ASSIGNMENT =====
+function resetNew() {
+  ['new-navn', 'new-kommune', 'new-oppdrag-merking', 'new-referanse', 'new-timepris'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('new-type').value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('new-startdato').value = today;
+  document.getElementById('new-sluttdato').value = '';
+}
+
+function createAssignment() {
+  const navn = document.getElementById('new-navn').value.trim();
+  const type = document.getElementById('new-type').value;
+  if (!navn) { toast('Oppgi oppdragsnavn'); return; }
+  if (!type) { toast('Velg oppdragstype'); return; }
+  const arr = getAll();
+  if (arr.length >= 3) { toast('Maks 3 aktive oppdrag samtidig'); return; }
+  const s = getSettings();
+  const tp = parseFloat(document.getElementById('new-timepris').value) || s.timepris || 850;
+
+  const a = {
+    id: uid(), navn, type,
+    kommuneMerking: document.getElementById('new-kommune').value.trim(),
+    oppdragsMerking: document.getElementById('new-oppdrag-merking').value.trim(),
+    referanse: document.getElementById('new-referanse').value.trim(),
+    startDato: document.getElementById('new-startdato').value,
+    sluttDato: document.getElementById('new-sluttdato').value,
+    status: 'active', notater: '',
+    bom: s.bom || 0, ferge: s.ferge || 0,
+    timepris: tp,
+    bobil: { active: false, dognpris: 0, kost: 0 },
+    dager: [], utgifter: [],
+    created: Date.now()
+  };
+  arr.push(a);
+  putAll(arr);
+  openA(a.id);
+}
+
+// ===== OPEN ASSIGNMENT =====
+function openA(id) {
+  currentId = id;
+  const a = getA(id);
+  if (!a) return;
+
+  document.getElementById('detail-name').textContent = a.navn;
+  document.getElementById('detail-type').textContent = a.type;
+  updateStatusUI(a);
+
+  // Tabs – reset to first
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-dager').classList.add('active');
+  document.querySelectorAll('.tab-btn')[0].classList.add('active');
+
+  // Transport
+  document.getElementById('bom-felt').value = a.bom || '';
+  document.getElementById('ferge-felt').value = a.ferge || '';
+
+  // Notater
+  document.getElementById('notater-felt').value = a.notater || '';
+
+  // Bobil
+  document.getElementById('bobil-dognpris').value = a.bobil?.dognpris || '';
+  document.getElementById('bobil-kost').value = a.bobil?.kost || '';
+  document.getElementById('bobil-sec').classList.toggle('hidden', !a.bobil?.active);
+
+  // Reset dag form
+  document.getElementById('dag-dato').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dag-timer').value = '';
+  document.getElementById('dag-km').value = '';
+  document.getElementById('dag-ekstra').value = '';
+  document.getElementById('dag-ekstra-desc').value = '';
+  document.getElementById('ekstra-desc-grp').classList.add('hidden');
+  document.getElementById('km-prev').classList.add('hidden');
+
+  // Reset expense form
+  document.getElementById('utg-desc').value = '';
+  document.getElementById('utg-belop').value = '';
+  document.getElementById('exp-prev').classList.add('hidden');
+  document.getElementById('exp-prev').src = '';
+  expImgData = null;
+
+  renderDager();
+  renderUtgifter();
+  updateRunning();
+
+  showScreen('assignment');
+}
+
+function updateStatusUI(a) {
+  const act = a.status === 'active';
+  document.getElementById('detail-status').textContent = act ? '● Aktiv' : '⏸ Pauset';
+  document.getElementById('detail-status').style.color = act ? 'rgba(255,255,255,1)' : '#FFD080';
+  document.getElementById('btn-pause').classList.toggle('hidden', !act);
+  document.getElementById('btn-resume').classList.toggle('hidden', act);
+}
+
+// ===== PAUSE / RESUME =====
+function pauseAssignment() {
+  const a = getA(currentId); if (!a) return;
+  a.status = 'paused'; putA(a); updateStatusUI(a); toast('⏸ Oppdrag pauset');
+}
+function resumeAssignment() {
+  const a = getA(currentId); if (!a) return;
+  a.status = 'active'; putA(a); updateStatusUI(a); toast('▶ Oppdrag gjenopptatt');
+}
+
+// ===== BOBIL =====
+function toggleBobil() {
+  const a = getA(currentId); if (!a) return;
+  a.bobil.active = !a.bobil.active;
+  putA(a);
+  document.getElementById('bobil-sec').classList.toggle('hidden', !a.bobil.active);
+  toast(a.bobil.active ? '🚐 Bobil aktivert' : '🚐 Bobil deaktivert');
+  updateRunning();
+}
+function saveBobil() {
+  const a = getA(currentId); if (!a) return;
+  a.bobil.dognpris = parseFloat(document.getElementById('bobil-dognpris').value) || 0;
+  a.bobil.kost = parseFloat(document.getElementById('bobil-kost').value) || 0;
+  putA(a); updateRunning();
+}
+
+// ===== DAYS =====
+function kmPreview() {
+  const km = parseFloat(document.getElementById('dag-km').value) || 0;
+  const prev = document.getElementById('km-prev');
+  if (km > 0) { prev.textContent = `↔ Tur/retur: ${km * 2} km`; prev.classList.remove('hidden'); }
+  else { prev.classList.add('hidden'); }
+}
+function ekstraChange() {
+  const v = parseFloat(document.getElementById('dag-ekstra').value) || 0;
+  document.getElementById('ekstra-desc-grp').classList.toggle('hidden', v <= 0);
+}
+function addDag() {
+  const dato = document.getElementById('dag-dato').value;
+  if (!dato) { toast('Oppgi dato'); return; }
+  const timer = parseFloat(document.getElementById('dag-timer').value) || 0;
+  const kmEnVei = parseFloat(document.getElementById('dag-km').value) || 0;
+  const ekstraKm = parseFloat(document.getElementById('dag-ekstra').value) || 0;
+  const ekstraDesc = document.getElementById('dag-ekstra-desc').value.trim();
+  const a = getA(currentId); if (!a) return;
+  a.dager.push({ id: uid(), dato, timer, kmEnVei, ekstraKm, ekstraDesc });
+  putA(a);
+  document.getElementById('dag-timer').value = '';
+  document.getElementById('dag-km').value = '';
+  document.getElementById('dag-ekstra').value = '';
+  document.getElementById('dag-ekstra-desc').value = '';
+  document.getElementById('km-prev').classList.add('hidden');
+  document.getElementById('ekstra-desc-grp').classList.add('hidden');
+  renderDager(); updateRunning(); toast('✓ Dag lagt til');
+}
+function delDag(dagId) {
+  const a = getA(currentId); if (!a) return;
+  a.dager = a.dager.filter(d => d.id !== dagId);
+  putA(a); renderDager(); updateRunning();
+}
+function renderDager() {
+  const a = getA(currentId); if (!a) return;
+  const s = getSettings();
+  const tp = a.timepris || s.timepris || 0;
+  const kms = s.kmSats || 5.30;
+  const list = document.getElementById('dag-list');
+  if (a.dager.length === 0) {
+    list.innerHTML = '<p style="text-align:center;padding:24px;color:var(--txl)">Ingen dager registrert ennå</p>';
+    return;
+  }
+  list.innerHTML = a.dager.map(d => {
+    const kmTR = (d.kmEnVei || 0) * 2;
+    const timerKr = (d.timer || 0) * tp;
+    const kmKr = (kmTR + (d.ekstraKm || 0)) * kms;
+    return `<div class="list-item">
+      <div class="li-info">
+        <div class="li-title">${fdate(d.dato)}</div>
+        <div class="li-sub">⏱ ${d.timer || 0} t × ${tp} kr = ${kr(timerKr)}</div>
+        ${kmTR > 0 ? `<div class="li-sub">🚗 ${d.kmEnVei} km × 2 = <strong>${kmTR} km</strong> (tur/retur)</div>` : ''}
+        ${d.ekstraKm > 0 ? `<div class="li-sub">+ ${d.ekstraKm} km ekstra: ${d.ekstraDesc || '–'}</div>` : ''}
+        <div class="li-sub" style="color:var(--pu);font-weight:600">Dag total: ${kr(timerKr + kmKr)}</div>
+      </div>
+      <button class="btn-del" onclick="delDag('${d.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== EXPENSES =====
+function prevExpense(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Resize before storing
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxW = 800, maxH = 600;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = h * maxW / w; w = maxW; }
+      if (h > maxH) { w = w * maxH / h; h = maxH; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      expImgData = canvas.toDataURL('image/jpeg', 0.75);
+      const prev = document.getElementById('exp-prev');
+      prev.src = expImgData; prev.classList.remove('hidden');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function addUtgift() {
+  const desc = document.getElementById('utg-desc').value.trim();
+  const belop = parseFloat(document.getElementById('utg-belop').value) || 0;
+  if (!desc) { toast('Legg til beskrivelse'); return; }
+  if (belop <= 0) { toast('Oppgi beløp'); return; }
+  const a = getA(currentId); if (!a) return;
+  a.utgifter.push({ id: uid(), desc, belop, bildeData: expImgData || null });
+  putA(a);
+  document.getElementById('utg-desc').value = '';
+  document.getElementById('utg-belop').value = '';
+  document.getElementById('exp-prev').classList.add('hidden');
+  document.getElementById('exp-prev').src = '';
+  document.getElementById('utg-bilde').value = '';
+  expImgData = null;
+  renderUtgifter(); updateRunning(); toast('✓ Utgift lagt til');
+}
+function delUtgift(id) {
+  const a = getA(currentId); if (!a) return;
+  a.utgifter = a.utgifter.filter(u => u.id !== id);
+  putA(a); renderUtgifter(); updateRunning();
+}
+function renderUtgifter() {
+  const a = getA(currentId); if (!a) return;
+  const list = document.getElementById('utgifter-list');
+  if (a.utgifter.length === 0) {
+    list.innerHTML = '<p style="text-align:center;padding:24px;color:var(--txl)">Ingen utgifter registrert</p>';
+    return;
+  }
+  list.innerHTML = a.utgifter.map(u => `
+    <div class="list-item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="li-info"><div class="li-title">${u.desc}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="li-amt">${kr(u.belop)}</span>
+          <button class="btn-del" onclick="delUtgift('${u.id}')">🗑</button>
+        </div>
+      </div>
+      ${u.bildeData ? `<img src="${u.bildeData}" class="receipt-img" onclick="openImg('${u.id}')" alt="Kvittering">` : ''}
+    </div>`).join('');
+}
+function openImg(utgId) {
+  const a = getA(currentId);
+  const u = a?.utgifter.find(x => x.id === utgId);
+  if (!u?.bildeData) return;
+  document.getElementById('img-full').src = u.bildeData;
+  document.getElementById('img-ov').classList.add('show');
+}
+
+// ===== TRANSPORT =====
+function saveTransport() {
+  const a = getA(currentId); if (!a) return;
+  a.bom = parseFloat(document.getElementById('bom-felt').value) || 0;
+  a.ferge = parseFloat(document.getElementById('ferge-felt').value) || 0;
+  putA(a); updateRunning();
+}
+
+// ===== NOTATER =====
+function saveNotater() {
+  const a = getA(currentId); if (!a) return;
+  a.notater = document.getElementById('notater-felt').value;
+  putA(a);
+}
+
+// ===== TOTALS =====
+function calcTotal(a) {
+  const s = getSettings();
+  const tp = a.timepris || s.timepris || 0;
+  const kms = s.kmSats || 5.30;
+  const timer = a.dager.reduce((acc, d) => acc + (d.timer || 0), 0);
+  const km = a.dager.reduce((acc, d) => acc + (d.kmEnVei || 0) * 2 + (d.ekstraKm || 0), 0);
+  const utg = a.utgifter.reduce((acc, u) => acc + (u.belop || 0), 0);
+  const nd = a.dager.length;
+  let total = timer * tp + km * kms + (a.bom || 0) + (a.ferge || 0) + utg;
+  if (a.bobil?.active) total += (a.bobil.dognpris || 0) * nd + (a.bobil.kost || 0);
+  return total;
+}
+function updateRunning() {
+  const a = getA(currentId); if (!a) return;
+  document.getElementById('running-total').textContent = kr(calcTotal(a));
+}
+function renderTotal() {
+  const a = getA(currentId); if (!a) return;
+  const s = getSettings();
+  const tp = a.timepris || s.timepris || 0;
+  const kms = s.kmSats || 5.30;
+  const timerTot = a.dager.reduce((acc, d) => acc + (d.timer || 0), 0);
+  const kmTot = a.dager.reduce((acc, d) => acc + (d.kmEnVei || 0) * 2 + (d.ekstraKm || 0), 0);
+  const utgTot = a.utgifter.reduce((acc, u) => acc + (u.belop || 0), 0);
+  const nd = a.dager.length;
+  const timerKr = timerTot * tp;
+  const kmKr = kmTot * kms;
+  const bobD = a.bobil?.active ? (a.bobil.dognpris || 0) * nd : 0;
+  const bobK = a.bobil?.active ? (a.bobil.kost || 0) : 0;
+  const total = timerKr + kmKr + (a.bom || 0) + (a.ferge || 0) + utgTot + bobD + bobK;
+
+  document.getElementById('total-breakdown').innerHTML = `
+    <table class="ttable">
+      <tr><td>⏱ Timer (${timerTot} t × ${tp} kr)</td><td>${kr(timerKr)}</td></tr>
+      <tr><td>🚗 Kjøring (${kmTot} km × ${kms} kr)</td><td>${kr(kmKr)}</td></tr>
+      <tr><td>🛣 Bom</td><td>${kr(a.bom || 0)}</td></tr>
+      <tr><td>⛴ Ferge</td><td>${kr(a.ferge || 0)}</td></tr>
+      <tr><td>🧾 Andre utgifter</td><td>${kr(utgTot)}</td></tr>
+      ${a.bobil?.active ? `
+        <tr class="tr-head"><td colspan="2">🚐 BOBIL</td></tr>
+        <tr><td>Døgnpris (${nd} dag × ${a.bobil.dognpris || 0} kr)</td><td>${kr(bobD)}</td></tr>
+        <tr><td>Kost</td><td>${kr(bobK)}</td></tr>
+      ` : ''}
+      <tr class="tr-total"><td><strong>TOTAL eks. MVA</strong></td><td><strong>${kr(total)}</strong></td></tr>
+    </table>`;
+
+  document.getElementById('oppdrag-info').innerHTML = [
+    ['Oppdrag', a.navn],
+    ['Type', a.type],
+    ['Kommunens merking', a.kommuneMerking || '–'],
+    ['Oppdragsgivers merking', a.oppdragsMerking || '–'],
+    ['Referanseperson', a.referanse || '–'],
+    ['Startdato', fdate(a.startDato)],
+    ['Sluttdato', fdate(a.sluttDato)],
+    ['Timepris', `${tp} kr/t`],
+  ].map(([l, v]) => `<div class="info-row"><span>${l}:</span><span>${v}</span></div>`).join('');
+}
+
+// ===== CLOSE ASSIGNMENT =====
+function initiateClose() {
+  document.getElementById('modal-confirm').classList.add('show');
+}
+function finalizeClose() {
+  closeModal('modal-confirm');
+  generatePDF();
+}
+
+// ===== SETTINGS =====
+function loadSettings() {
+  const s = getSettings();
+  document.getElementById('s-timepris').value = s.timepris || '';
+  document.getElementById('s-kmsats').value = s.kmSats ?? 5.30;
+  document.getElementById('s-bom').value = s.bom || '';
+  document.getElementById('s-ferge').value = s.ferge || '';
+  document.getElementById('s-firmanavn').value = s.firmanavn || '';
+  document.getElementById('s-adresse').value = s.adresse || '';
+  document.getElementById('s-orgnr').value = s.orgNr || '';
+  document.getElementById('s-kontonr').value = s.kontoNr || '';
+  const lp = document.getElementById('logo-prev');
+  if (s.logo) { lp.src = s.logo; lp.classList.remove('hidden'); }
+  else { lp.classList.add('hidden'); }
+}
+function saveSettings() {
+  const s = getSettings();
+  s.timepris = parseFloat(document.getElementById('s-timepris').value) || 850;
+  s.kmSats = parseFloat(document.getElementById('s-kmsats').value) || 5.30;
+  s.bom = parseFloat(document.getElementById('s-bom').value) || 0;
+  s.ferge = parseFloat(document.getElementById('s-ferge').value) || 0;
+  s.firmanavn = document.getElementById('s-firmanavn').value.trim();
+  s.adresse = document.getElementById('s-adresse').value.trim();
+  s.orgNr = document.getElementById('s-orgnr').value.trim();
+  s.kontoNr = document.getElementById('s-kontonr').value.trim();
+  putSettings(s);
+  toast('✓ Innstillinger lagret');
+}
+function uploadLogo(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxH = 120, scale = Math.min(1, maxH / img.height);
+      canvas.width = img.width * scale; canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL('image/png', 0.85);
+      const s = getSettings(); s.logo = data; putSettings(s);
+      const lp = document.getElementById('logo-prev'); lp.src = data; lp.classList.remove('hidden');
+      toast('✓ Logo lastet opp');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeLogo() {
+  const s = getSettings(); s.logo = ''; putSettings(s);
+  const lp = document.getElementById('logo-prev'); lp.src = ''; lp.classList.add('hidden');
+  toast('Logo fjernet');
+}
+
+// ===== TOAST =====
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2600);
+}
+
+// ===== PDF GENERATION =====
+async function generatePDF() {
+  const a = getA(currentId);
+  if (!a) return;
+
+  if (typeof window.jspdf === 'undefined') {
+    toast('Laster PDF-bibliotek – prøv igjen om et sekund');
+    setTimeout(() => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = generatePDF;
+      document.head.appendChild(s);
+    }, 100);
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const s = getSettings();
+  const W = 210, M = 15, CW = W - M * 2;
+  let y = 15;
+
+  const tp = a.timepris || s.timepris || 0;
+  const kms = s.kmSats || 5.30;
+  const timerTot = a.dager.reduce((acc, d) => acc + (d.timer || 0), 0);
+  const kmTot = a.dager.reduce((acc, d) => acc + (d.kmEnVei || 0) * 2 + (d.ekstraKm || 0), 0);
+  const utgTot = a.utgifter.reduce((acc, u) => acc + (u.belop || 0), 0);
+  const nd = a.dager.length;
+  const timerKr = timerTot * tp;
+  const kmKr = kmTot * kms;
+  const bobD = a.bobil?.active ? (a.bobil.dognpris || 0) * nd : 0;
+  const bobK = a.bobil?.active ? (a.bobil.kost || 0) : 0;
+  const total = timerKr + kmKr + (a.bom || 0) + (a.ferge || 0) + utgTot + bobD + bobK;
+
+  function chk(space = 20) {
+    if (y + space > 272) { doc.addPage(); y = 18; }
+  }
+
+  // === HEADER ===
+  doc.setFillColor(74, 37, 112);
+  doc.rect(0, 0, W * 0.6, 42, 'F');
+  doc.setFillColor(107, 58, 158);
+  doc.rect(W * 0.55, 0, W * 0.45, 42, 'F');
+  doc.setFillColor(201, 75, 122);
+  doc.rect(W * 0.72, 0, W * 0.28, 42, 'F');
+
+  if (s.logo) {
+    try { doc.addImage(s.logo, 'PNG', M, 7, 0, 28); }
+    catch {
+      doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+      doc.text(s.firmanavn || 'EIDSET MANAGEMENT', M, 20);
+    }
+  } else {
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+    doc.text('EIDSET', M, 18);
+    doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(230, 210, 250);
+    doc.text('MANAGEMENT', M, 26);
+    doc.setFontSize(9); doc.setTextColor(200, 180, 230);
+    doc.text('Fakturagrunnlag', M, 34);
+  }
+
+  // Firm info right
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(240, 228, 255);
+  let fy = 10;
+  if (s.firmanavn) { doc.text(s.firmanavn, W - M, fy, { align: 'right' }); fy += 6; }
+  if (s.adresse) { doc.text(s.adresse, W - M, fy, { align: 'right' }); fy += 6; }
+  if (s.orgNr) { doc.text('Org.nr: ' + s.orgNr, W - M, fy, { align: 'right' }); fy += 6; }
+  if (s.kontoNr) { doc.text('Konto: ' + s.kontoNr, W - M, fy, { align: 'right' }); }
+
+  y = 50;
+
+  // === OPPDRAGSINFO ===
+  doc.setFillColor(242, 232, 250); doc.rect(M, y - 5, CW, 9, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(74, 37, 112);
+  doc.text('OPPDRAGSINFORMASJON', M + 2, y + 1);
+  y += 7;
+
+  const infoRows = [
+    ['Oppdragsnavn', a.navn],
+    ['Oppdragstype', a.type],
+    ['Kommunens merking', a.kommuneMerking || '–'],
+    ['Oppdragsgivers merking', a.oppdragsMerking || '–'],
+    ['Referanseperson', a.referanse || '–'],
+    ['Startdato', fdate(a.startDato)],
+    ['Sluttdato', fdate(a.sluttDato)],
+  ];
+  infoRows.forEach(([label, val]) => {
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(107, 58, 158);
+    doc.text(label + ':', M + 2, y);
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(String(val), CW - 58);
+    doc.text(lines, M + 60, y);
+    y += 6.5;
+  });
+  y += 3;
+  doc.setDrawColor(180, 140, 210); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 5;
+
+  // === DAGLIG LOGG ===
+  chk(30);
+  doc.setFillColor(242, 232, 250); doc.rect(M, y - 5, CW, 9, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(74, 37, 112);
+  doc.text('DAGLIG LOGG', M + 2, y + 1); y += 8;
+
+  if (a.dager.length === 0) {
+    doc.setFontSize(10); doc.setFont('helvetica', 'italic'); doc.setTextColor(160, 140, 180);
+    doc.text('Ingen dager registrert', M + 2, y); y += 8;
+  } else {
+    // Table header
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(107, 58, 158);
+    doc.text('Dato', M, y);
+    doc.text('Timer', M + 30, y);
+    doc.text('Km t/r', M + 55, y);
+    doc.text('Ekstra km', M + 82, y);
+    doc.text('Beskrivelse ekstra', M + 112, y);
+    y += 5;
+    doc.setDrawColor(200, 180, 220); doc.line(M, y, W - M, y); y += 4;
+    a.dager.forEach(d => {
+      chk(10);
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40);
+      doc.text(fdate(d.dato), M, y);
+      doc.text(String(d.timer || 0), M + 30, y);
+      doc.text(String((d.kmEnVei || 0) * 2) + ' km', M + 55, y);
+      doc.text(String(d.ekstraKm || 0) + ' km', M + 82, y);
+      const desc = doc.splitTextToSize(d.ekstraDesc || '–', 80);
+      doc.text(desc[0], M + 112, y);
+      y += 7;
+    });
+  }
+  y += 3;
+  doc.setDrawColor(180, 140, 210); doc.line(M, y, W - M, y); y += 5;
+
+  // === ANDRE UTGIFTER ===
+  chk(20);
+  doc.setFillColor(242, 232, 250); doc.rect(M, y - 5, CW, 9, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(74, 37, 112);
+  doc.text('ANDRE UTGIFTER', M + 2, y + 1); y += 8;
+
+  if (a.utgifter.length === 0) {
+    doc.setFontSize(10); doc.setFont('helvetica', 'italic'); doc.setTextColor(160, 140, 180);
+    doc.text('Ingen utgifter registrert', M + 2, y); y += 8;
+  } else {
+    for (const u of a.utgifter) {
+      chk(u.bildeData ? 65 : 14);
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(40, 40, 40);
+      doc.text(u.desc, M + 2, y);
+      doc.setTextColor(107, 58, 158);
+      doc.text(kr(u.belop), W - M, y, { align: 'right' });
+      y += 7;
+      if (u.bildeData) {
+        try {
+          const t = u.bildeData.includes('image/png') ? 'PNG' : 'JPEG';
+          doc.addImage(u.bildeData, t, M, y, 80, 50, undefined, 'FAST');
+          y += 55;
+        } catch { y += 3; }
+      }
+      y += 3;
+    }
+  }
+  doc.setDrawColor(180, 140, 210); doc.line(M, y, W - M, y); y += 5;
+
+  // === NOTATER ===
+  if (a.notater?.trim()) {
+    chk(20);
+    doc.setFillColor(242, 232, 250); doc.rect(M, y - 5, CW, 9, 'F');
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(74, 37, 112);
+    doc.text('NOTATER', M + 2, y + 1); y += 8;
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(a.notater, CW - 4);
+    lines.forEach(l => { chk(8); doc.setFontSize(10); doc.text(l, M + 2, y); y += 6.5; });
+    y += 3;
+    doc.setDrawColor(180, 140, 210); doc.line(M, y, W - M, y); y += 5;
+  }
+
+  // === KOSTNADSSAMMENDRAG ===
+  chk(80);
+  doc.setFillColor(242, 232, 250); doc.rect(M, y - 5, CW, 9, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(74, 37, 112);
+  doc.text('KOSTNADSSAMMENDRAG', M + 2, y + 1); y += 8;
+
+  const sumRows = [
+    [`Timer (${timerTot} t × ${tp} kr)`, kr(timerKr)],
+    [`Kjøring (${kmTot} km × ${kms} kr)`, kr(kmKr)],
+    [`Bom`, kr(a.bom || 0)],
+    [`Ferge`, kr(a.ferge || 0)],
+    [`Andre utgifter`, kr(utgTot)],
+  ];
+  sumRows.forEach(([l, v]) => {
+    chk(8);
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(40, 40, 40);
+    doc.text(l, M + 2, y);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(107, 58, 158);
+    doc.text(v, W - M, y, { align: 'right' });
+    y += 7;
+  });
+  y += 2;
+  doc.setDrawColor(107, 58, 158); doc.setLineWidth(0.7); doc.line(M, y, W - M, y); y += 6;
+  doc.setFillColor(107, 58, 158); doc.rect(M, y - 5, CW, 13, 'F');
+  doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255);
+  doc.text('TOTAL EKS. MVA', M + 4, y + 4);
+  doc.text(kr(total), W - M - 3, y + 4, { align: 'right' });
+  y += 16;
+
+  // === BOBIL ===
+  if (a.bobil?.active) {
+    chk(55);
+    y += 4;
+    doc.setFillColor(252, 232, 241);
+    doc.rect(M, y - 4, CW, 52, 'F');
+    doc.setDrawColor(201, 75, 122); doc.setLineWidth(0.5);
+    doc.rect(M, y - 4, CW, 52, 'S');
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 40, 100);
+    doc.text('BOBIL – UTLEIEGRUNNLAG', M + 3, y + 3); y += 9;
+    const bobRows = [
+      [`Døgnpris (${nd} dag × ${a.bobil.dognpris || 0} kr)`, kr(bobD)],
+      [`Kost totalt`, kr(bobK)],
+      [`Km (inngår i ordinær kjøring ovenfor)`, '–'],
+    ];
+    bobRows.forEach(([l, v]) => {
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 30, 60);
+      doc.text(l, M + 3, y);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 40, 100);
+      doc.text(v, W - M, y, { align: 'right' });
+      y += 7;
+    });
+    y += 2;
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 40, 100);
+    doc.text('Bobil subtotal:', M + 3, y);
+    doc.text(kr(bobD + bobK), W - M, y, { align: 'right' });
+    y += 14;
+  }
+
+  // Footer
+  const genDt = new Date().toLocaleString('nb-NO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 160, 200);
+  doc.text(`Generert: ${genDt}  |  Eidset Management  |  Alle priser eks. MVA`, W / 2, 290, { align: 'center' });
+
+  // === SAVE ===
+  const fname = `Eidset_${a.navn.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+
+  // Download
+  const link = document.createElement('a');
+  link.href = url; link.download = fname;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+  // Also open in new tab
+  setTimeout(() => { window.open(url, '_blank'); }, 600);
+
+  // Delete assignment
+  putAll(getAll().filter(x => x.id !== currentId));
+  currentId = null;
+  toast('✓ PDF generert og lastet ned');
+  setTimeout(() => showScreen('home'), 1200);
+}
+
+// ===== PWA MANIFEST =====
+(function () {
+  const svgIcon = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='32' fill='%236B3A9E'/><rect x='0' y='0' width='192' height='192' rx='32' fill='url(%23g)'/><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%234A2575'/><stop offset='0.6' stop-color='%236B3A9E'/><stop offset='1' stop-color='%23C94B7A'/></linearGradient></defs><text x='96' y='76' text-anchor='middle' font-family='Georgia,serif' font-size='34' font-weight='bold' fill='white' letter-spacing='1'>EIDSET</text><text x='96' y='108' text-anchor='middle' font-family='Georgia,serif' font-size='18' fill='rgba(230,210,255,0.9)' letter-spacing='2'>MANAGEMENT</text></svg>`;
+  const manifest = {
+    name: 'Eidset Management', short_name: 'Eidset',
+    description: 'Oppdragslogg og fakturagrunnlag',
+    start_url: './', display: 'standalone',
+    background_color: '#FBF0F7', theme_color: '#6B3A9E',
+    icons: [
+      { src: 'data:image/svg+xml,' + encodeURIComponent(svgIcon), sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: 'data:image/svg+xml,' + encodeURIComponent(svgIcon), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+})();
+
+// ===== INIT =====
+renderHome();
+</script>
+</body>
+</html>
